@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Textbase</title>
+</head>
+<body>
+    <canvas id="snowCanvas"></canvas>
+    <div class="wrapper">
+        <form id="loginForm">
+            <a href="index.html">Back</a> <h1>Login</h1>
+            <div class="input-box">
+                <input type="text" placeholder="Username" id="username" required>
+            </div>
+            <div class="input-box">
+                <input type="password" placeholder="Password" id="password" required>
+            </div>
+            <div class="remember-forget">
+                <label><input type="checkbox" id="rememberMe"> Remember me</label>
+                <a href="Forgot.html">Forgot password?</a>
+            </div>
+            <button type="submit" class="btn" id="submit">Login</button>
+            <div class="register-link">
+                <p>Don't have an account? <a href="Register.html">register</a></p>
+            </div>
+        </form>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+        const firebaseConfig = {
+  apiKey: "AIzaSyDZDtz73iSFnUjTVuQHgtoxZi2Pnw_W51I",
+  authDomain: "textbase-c1696.firebaseapp.com",
+  projectId: "textbase-c1696",
+  storageBucket: "textbase-c1696.firebasestorage.app",
+  messagingSenderId: "579485642493",
+  appId: "1:579485642493:web:0465534f5dbdcdb82e5894",
+  measurementId: "G-QZ13P0JYTS"
+};
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        // On page load, check if we should pre-fill
+const rememberMe = document.getElementById("rememberMe");
+const savedUser = localStorage.getItem('rememberedUser');
+if (savedUser) {
+    document.getElementById("username").value = savedUser;
+    rememberMe.checked = true;
+}
+
+// In your submit handler, after successful login:
+if (rememberMe.checked) {
+    localStorage.setItem('rememberedUser', username);
+} else {
+    localStorage.removeItem('rememberedUser');
+}   
+
+        document.getElementById("loginForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            const username = document.getElementById("username").value;
+            const pass = document.getElementById("password").value;
+
+            // Convert username to email format for Firebase
+            const email = username + "@textbase.app";
+
+            signInWithEmailAndPassword(auth, email, pass)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    localStorage.setItem('user', username);
+                    window.location.href = "mainscreen.html";
+                })
+                .catch((error) => {
+                    alert("Invalid username or password.");
+                });
+        });
+    </script>
+</body>
+</html>   

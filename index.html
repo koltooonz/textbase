@@ -1,0 +1,47 @@
+ <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="Style2.css">
+        <title>Textbase</title>
+    </head>
+    <body>
+        <canvas id="snowCanvas">
+            <div class = "secret vault passage">
+                <a><b>0</b></a>
+                </div>
+        </canvas>
+        <div class="wrapper">
+        <br><br>
+            <div class = "logo">
+        <img src="TextbaseLogo.jpeg" class = 'base-logo'>
+                </div>
+        <h1>Textbase</h1> 
+        <h2>"Home of infinite speech"</h2> <br>
+            <div class="links">
+        <a href="Login.html">Sign in</a>
+                <div class = "register">
+        <a href="Register.html">Register</a>
+                </div>
+                </div>
+            </div>
+        <!-- Pumpkin image (put your pumpkin.png in the same folder) -->
+<img src="pumpkin.png" id="pumpkin" alt="Pumpkin">
+<b class="version">Ver. 1.3 (halloween!!!)</b>
+<script>
+    const squeak = new Audio("squeak.mp3"); // put squeak.mp3 in the same folder
+
+    document.getElementById("pumpkin").addEventListener("click", function() {
+        // Play the squeak
+        squeak.currentTime = 0;
+        squeak.play();
+
+        // Trigger the squish animation
+        this.classList.remove("squish");
+        void this.offsetWidth; // force reflow so animation restarts
+        this.classList.add("squish");
+    });
+</script>   
+    </body>
+    </html>

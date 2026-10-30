@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <title>Textbase</title>
+</head>
+<body>
+    <canvas id="snowCanvas"></canvas>
+    <div class="wrapper">
+        <a href="Login.html">Back</a> <h1>Reset Password</h1>
+        <form id="forgotForm">
+            <div class="input-box">
+                <input type="text" placeholder="Username" id="username" required>
+            </div>
+            <button type="submit" class="btn">Send Reset Email</button>
+        </form>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getAuth, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        document.getElementById("forgotForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            const username = document.getElementById("username").value;
+            const email = "koltonbilter228@gmail.com";
+
+            sendPasswordResetEmail(auth, email)
+                .then(() => {
+                    alert("Password reset email sent! Check your inbox.");
+                    window.location.href = "login.html";
+                })
+                .catch((error) => {
+                    alert("Could not send reset email. Make sure the username is correct.");
+                });
+        });
+    </script>
+</body>
+</html>   
