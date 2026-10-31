@@ -78,26 +78,23 @@
             border: none;
             cursor: pointer;
         }
-        .server-one button h3,
-        .server-two button h3,
-        .server-three button h3,
-        .server-four button h3,
-        .server-five button h3 {
+        .side-menu button {
+            height: 60px;
+            width: 60px;
+            background-color: #323438;
+            border-radius: 15px;
+            transition: background-color 0.5s ease;
+            border: none;
+            cursor: pointer;
+        }
+        .side-menu button h3 {
             color: #fff;
             font-size: 12px;
         }
-        .server-one button:hover,
-        .server-two button:hover,
-        .server-three button:hover,
-        .server-four button:hover,
-        .server-five button:hover {
+        .side-menu button:hover {
             background-color: #202124;
         }
-        .server-one button.active,
-        .server-two button.active,
-        .server-three button.active,
-        .server-four button.active,
-        .server-five button.active {
+        .side-menu button.active {
             background-color: #5865f2;
         }
 
@@ -189,14 +186,14 @@
         <div class="chat-header" id="chatHeader"></div>
         <div class="messages" id="messages"></div>
         <div class="input-bar">
-            <input id="msgInput" placeholder="Type a message…">
+            <input id="msgInput" placeholder="Type a message or drag & drop an image here…">
             <button id="sendMsgBtn">Send</button>
         </div>
     </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
-import { getDatabase, ref, onValue, push, set, get } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js";
+import { getDatabase, ref, onValue, push, set, get, remove } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDTcE0vUwWLsXeEJ9CbCjlGctv2rrF0syU",
@@ -218,16 +215,28 @@ document.getElementById("user-info").textContent = user;
 const serverSlots = {};
 let activeSlot = null;
 let currentListener = null;
+let clickTimers = {};
 
-// ── Wire up buttons ────────────────────────────────────────────
+// ── Wire up buttons with single-click (open/add) and double-click (remove) ──
 [1, 2, 3, 4, 5].forEach(slot => {
-  document.getElementById(`serverBtn${slot}`).addEventListener('click', () => handleServer(slot));
+    const btn = document.getElementById(`serverBtn${slot}`);
+
+    btn.addEventListener('click', () => {
+        if (clickTimers[slot]) clearTimeout(clickTimers[slot]);
+        clickTimers[slot] = setTimeout(() => {
+            handleSingleClick(slot);
+        }, 250);
+    });
+
+    btn.addEventListener('dblclick', () => {
+        if (clickTimers[slot]) clearTimeout(clickTimers[slot]);
+        handleRemoveServer(slot);
+    });
 });
 
 document.getElementById('sendMsgBtn').addEventListener('click', send);
-
 document.getElementById('msgInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') send();
+    if (e.key === 'Enter') send();
 });
 
 // ── Load saved server slots from Firebase ──────────────────────
@@ -246,20 +255,47 @@ async function loadServers() {
 }
 loadServers();
 
-// ── Handle server button click ─────────────────────────────────
-function handleServer(slot) {
-  const btn = document.getElementById(`serverBtn${slot}`);
+// ── Single Click: Open Chat or Add Server ──────────────────────
+function handleSingleClick(slot) {
+    const btn = document.getElementById(`serverBtn${slot}`);
 
-  if (serverSlots[slot]) {
-    openChat(slot);
-  } else {
-    const id = prompt("Enter server ID:");
-    if (!id) return;
-    serverSlots[slot] = { id, name: id };
-    btn.querySelector("h3").textContent = id.slice(0, 8);
-    set(ref(db, `userServers/${user}/${slot}`), { id, name: id });
-    openChat(slot);
-  }
+    if (serverSlots[slot]) {
+        openChat(slot);
+    } else {
+        const id = prompt("Enter server ID:");
+        if (!id) return;
+        serverSlots[slot] = { id, name: id };
+        btn.querySelector("h3").textContent = id.slice(0, 8);
+        set(ref(db, `userServers/${user}/${slot}`), { id, name: id });
+        openChat(slot);
+    }
+}
+
+// ── Double Click: Remove Server ────────────────────────────────
+function handleRemoveServer(slot) {
+    const btn = document.getElementById(`serverBtn${slot}`);
+    if (!serverSlots[slot]) return;
+
+    const confirmRemove = confirm(`Do you want to remove server "${serverSlots[slot].name}" from your account?`);
+    if (!confirmRemove) return;
+
+    // 1. Remove from Firebase database
+    remove(ref(db, `userServers/${user}/${slot}`));
+
+    // 2. Clear local state and reset button text
+    delete serverSlots[slot];
+    btn.querySelector("h3").textContent = "+ Add";
+    btn.classList.remove('active');
+
+    // 3. Close chat panel if this was the active server
+    if (activeSlot === slot) {
+        activeSlot = null;
+        document.getElementById("chatPanel").classList.remove("open");
+        if (currentListener) {
+            currentListener();
+            currentListener = null;
+        }
+    }
 }
 
 // ── Open chat panel & subscribe to live messages ───────────────
@@ -281,15 +317,21 @@ function openChat(slot) {
 
     box.innerHTML = Object.entries(data).map(([key, m]) => {
       const isMe = m.name === user;
+      
+      let content = "";
+      if (m.text) content += `<div>${m.text}</div>`;
+      if (m.image) content += `<img src="${m.image}" style="max-width: 200px; border-radius: 8px; margin-top: 4px; display: block;">`;
+
       return `<div class="msg ${isMe ? 'me' : 'other'}">
-        <div class="name">${m.name}</div>${m.text}
+        <div class="name">${m.name}</div>
+        ${content}
       </div>`;
     }).join("");
     box.scrollTop = box.scrollHeight;
   });
 }
 
-// ── Send a message ─────────────────────────────────────────────
+// ── Send a text message ────────────────────────────────────────
 function send() {
   const input = document.getElementById("msgInput");
   const text = input.value.trim();
@@ -301,6 +343,42 @@ function send() {
     text,
     timestamp: Date.now()
   });
+  input.value = "";
+}
+
+// ── Drag and Drop Image Support ────────────────────────────────
+const chatPanel = document.getElementById('chatPanel');
+
+chatPanel.addEventListener('dragover', (e) => {
+    e.preventDefault();
+});
+
+chatPanel.addEventListener('drop', (e) => {
+    e.preventDefault();
+    if (!activeSlot) return;
+
+    const file = e.dataTransfer.files[0];
+    if (!file || !file.type.startsWith('image/')) {
+        alert("Please drop an image file!");
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        const base64Image = event.target.result;
+        const s = serverSlots[activeSlot];
+
+        push(ref(db, `servers/${s.id}/messages`), {
+            name: user,
+            image: base64Image,
+            timestamp: Date.now()
+        });
+    };
+    reader.readAsDataURL(file);
+});
+</script>
+</body>
+</html>
   input.value = "";
 }
 </script>
